@@ -4,22 +4,22 @@ locals {
   thumbprints_in_quotes = "${formatlist("&quot;%s&quot;", var.api_gateway_test_certificate_thumbprints)}"
   thumbprints_in_quotes_str = "${join(",", local.thumbprints_in_quotes)}"
   api_policy = "${replace(file("template/api-policy.xml"), "ALLOWED_CERTIFICATE_THUMBPRINTS", local.thumbprints_in_quotes_str)}"
-  api_base_path = "payments-api"
+  api_base_path = "future-hearings-api"
   dummy = "dummy"
 }
-data "azurerm_key_vault" "payment_key_vault" {
-  name = "ccpay-${var.env}"
-  resource_group_name = "ccpay-${var.env}"
+data "azurerm_key_vault" "fh_hmi_key_vault" { //assuming here that the name of the key vault is fh_hmi_key_vault
+  name = "fh-${var.env}" //assuming here that the name starts with 'fh'
+  resource_group_name = "fh-${var.env}" //assuming here that the name of the rg starts with 'fh'
 }
 
 data "azurerm_key_vault_secret" "s2s_client_secret" {
   name = "gateway-s2s-client-secret"
-  vault_uri = "${data.azurerm_key_vault.payment_key_vault.vault_uri}"
+  vault_uri = "${data.azurerm_key_vault.fh_hmi_key_vault.vault_uri}"
 }
 
 data "azurerm_key_vault_secret" "s2s_client_id" {
   name = "gateway-s2s-client-id"
-  vault_uri = "${data.azurerm_key_vault.payment_key_vault.vault_uri}"
+  vault_uri = "${data.azurerm_key_vault.fh_hmi_key_vault.vault_uri}"
 }
 
 data "template_file" "policy_template" {
@@ -44,10 +44,10 @@ resource "azurerm_template_deployment" "api" {
   count               = "${var.env != "preview" ? 1: 0}"
 
   parameters = {
-    apiManagementServiceName  = "core-api-mgmt-${var.env}"
+    apiManagementServiceName  = "core-api-mgmt-${var.env}" // Needs to as per the name of out management service
     apiName                   = "${var.product}-api"
     apiProductName            = "${var.product}"
-    serviceUrl                = "http://payment-api-${var.env}.service.core-compute-${var.env}.internal"
+    serviceUrl                = "http://future-hearings-api-${var.env}.service.core-compute-${var.env}.internal" // assuming this is the nomenclature followed for the backend api
     apiBasePath               = "${local.api_base_path}"
     policy                    = "${data.template_file.policy_template.rendered}"
   }

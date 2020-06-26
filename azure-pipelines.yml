@@ -1,0 +1,138 @@
+parameters:
+  - name: Run_Stage
+    displayName: Stage to Run
+    type: string
+    default: 'Genesis'
+    values:
+      - Genesis
+      - Deploy
+      - Managed_Identity
+      - Bootstrap
+      - Destroy
+
+  - name: location
+    displayName: Location
+    type: string
+    default: 'UK South'
+    values:
+      - 'UK South'
+      - 'UK West'
+
+  - name: variablegroup
+    displayName: Variable Group
+    type: string
+    default: ''
+    values:
+      - dts-sharedservices-sbox
+      - dts-management-test
+      - dts-management-sbox
+      - dts-management-nonprod
+
+name: HMCTS Shared Services AKS Azure Infrastructure Deployment Pipeline
+trigger:
+  - none
+
+variables:
+  - group: ${{ parameters.variablegroup }}
+  - name: serviceConnection
+    value: $(subscriptionName)
+  - name: gaserviceconnection
+    value: $(gaconnection)
+
+
+stages:
+
+  - stage: Genesis
+    displayName: 'Genesis'
+    condition: contains('${{ parameters.Run_Stage }}', 'Genesis')
+    jobs:
+      - job: Genesis
+        steps:
+          - template: pipeline-steps/genesis.yaml
+            parameters:
+              gaserviceconnection: $(gaserviceconnection)
+              service: $(service)
+              environment: $(environment)
+              location: ${{ parameters.location }}
+              tfstatestorage: $(tfstatestorage)
+              stack: $(stack)
+              sptoken: $(sptoken)
+              project: $(project)
+
+  - stage: ReadKeyVault
+    displayName: 'ReadKeyVault'
+    condition: contains('${{ parameters.Run_Stage }}', 'Deploy')
+    jobs:
+      - job: ReadKeyVault
+        steps:
+          - template: pipeline-steps/keyvault-read.yaml
+            parameters:
+              serviceConnection: $(serviceConnection)
+              keyvaultName: $(keyvaultName)
+
+  - stage: DeployInfrastructure
+    displayName: 'DeployInfrastructure'
+    condition: contains('${{ parameters.Run_Stage }}', 'Deploy')
+    dependsOn: ReadKeyVault
+    jobs:
+      - job: DeployInfrastructure
+        steps:
+          - template: pipeline-steps/deploy-service.yaml
+            parameters:
+              service: $(service)
+              environment: $(environment)
+              location: ${{ parameters.location }}
+              tfstatestorage: $(tfstatestorage)
+              stack: $(stack)
+              sptoken: $(sptoken)
+              project: $(project)
+
+  - stage: DestroyInfrastructure
+    displayName: 'DestroyInfrastructure'
+    condition: contains('${{ parameters.Run_Stage }}', 'Destroy')
+    jobs:
+      - job: DestroyInfrastructure
+        steps:
+          - template: pipeline-steps/destroy-service.yaml
+            parameters:
+              service: $(service)
+              environment: $(environment)
+              location: ${{ parameters.location }}
+              tfstatestorage: $(tfstatestorage)
+              stack: $(stack)
+              sptoken: $(sptoken)
+              project: $(project)
+
+  - stage: BootStrap
+    displayName: 'BootStrap'
+    condition: contains('${{ parameters.Run_Stage }}', 'Bootstrap')
+    jobs:
+      - job: BootStrap
+        steps:
+          - template: pipeline-steps/bootstrap.yaml
+            parameters:
+              serviceBootstrap: $(serviceBootstrap)
+              environment: $(environment)
+              command: $(command)
+              project: $(project)
+              serviceConnection: $(serviceConnection)
+              keyVaultName: $(keyVaultName)
+              subscriptionName: $(subscriptionName)
+              sptoken: $(sptoken)
+
+  - stage: Managed_Identity
+    displayName: 'Managed_Identity'
+    condition: contains('${{ parameters.Run_Stage }}', 'Managed_Identity')
+    jobs:
+      - job: Managed_Identity
+        steps:
+          - template: pipeline-steps/managed_identity.yaml
+            parameters:
+              gaserviceconnection: $(gaserviceconnection)
+              serviceConnection: $(serviceConnection)
+              service: $(service)
+              environment: $(environment)
+              location: ${{ parameters.location }}
+              tfstatestorage: $(tfstatestorage)
+              stack: $(stack)
+              project: $(project)
