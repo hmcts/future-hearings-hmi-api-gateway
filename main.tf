@@ -8,11 +8,11 @@ locals {
   dummy = "dummy"
 }
 data "azurerm_key_vault" "payment_key_vault" {
-  name = "ccpay-${var.env}"
+  name = "fh-hmi-${var.env}"
   resource_group_name = "ccpay-${var.env}"
 }
 
-data "azurerm_key_vault_secret" "s2s_client_secret" {
+data "azurerm_key_vault_secret" "fh_hmi_client_secret" {
   name = "gateway-s2s-client-secret"
   vault_uri = "${data.azurerm_key_vault.payment_key_vault.vault_uri}"
 }
