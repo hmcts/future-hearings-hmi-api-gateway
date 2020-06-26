@@ -2,4 +2,4 @@
 //noinspection GroovyUnusedAssignment
 @Library("Infrastructure") _
 
-withInfraPipeline('hmi') {}
+withInfraPipeline('fh-hmi') {}

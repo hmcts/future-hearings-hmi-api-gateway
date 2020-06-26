@@ -7,4 +7,4 @@ properties([
 		])
 ])
 
-withInfrastructurePipeline('hmi', params.ENVIRONMENT, 'sandbox')
+withInfrastructurePipeline('fh-hmi', params.ENVIRONMENT, 'sandbox')
